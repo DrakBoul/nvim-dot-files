@@ -3,6 +3,8 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
+vim.g.have_nerd_font = true
+
 -- Set relative line numbers
 vim.opt.relativenumber = true
 vim.opt.number = true
@@ -10,17 +12,28 @@ vim.opt.number = true
 -- Configure White Space
 vim.opt.shiftwidth = 4
 vim.opt.tabstop = 4
+
+
 vim.opt.expandtab = true
+vim.opt.ignorecase = true
+vim.opt.smartcase = true
+vim.o.signcolumn = 'yes'
+vim.o.inccommand = 'split'
+vim.o.cursorline = true
+vim.o.showmode = true
+
+vim.schedule(function()
+vim.o.clipboard = 'unnamedplus'
+end)
+
+
+vim.keymap.set('i','jk', '<Esc>')
 
 -- Clear search highlighting using escape
 vim.keymap.set('n', '<Esc>', '<cmd>nohlsearch<CR>')
 
--- Open Netrw
-vim.keymap.set('n', '<Leader>d', '<cmd>Ex<CR>', {desc = 'Open Netrw'})
-
--- Shortcut for entering normal mode
-vim.keymap.set('i', 'jk', '<Esc>')
-vim.keymap.set('t', 'jk', '<C-\\><C-n>')
+-- Open Oil.nvim
+vim.keymap.set('n', '<Leader>d', '<cmd>Oil<CR>', {desc = 'Open Oil'})
 
 -- Shortcut to jump between windows
 vim.keymap.set('n','<C-h>', '<C-w><C-h>')
@@ -60,87 +73,13 @@ vim.keymap.set('n', '<leader>th', '<cmd>tabprevious<CR>', { desc = 'Goto Previou
 vim.keymap.set('n', '<leader>cj', '<cmd>cnext<CR>', {desc = 'Goto Next Quick Fix'})
 vim.keymap.set('n', '<leader>ck', '<cmd>cprev<CR>', {desc = 'Goto Previous Quick Fix'})
 
--- Terminal
-local termbuf = nil
-local visible = false
-local termwidth = vim.api.nvim_win_get_width(0)
-local termheight = vim.api.nvim_win_get_height(0)
-local termopts = {relative='win', row=0, col=0, width=termwidth, height=termheight}
-
-function ToggleTerm()
-    if termbuf == nil and not visible then
-        termbuf = vim.api.nvim_create_buf(false, true)
-        vim.api.nvim_open_win(termbuf, true, termopts)
-        vim.api.nvim_win_set_buf(0, termbuf)
-        vim.cmd("term")
-        vim.cmd("startinsert")
-        visible = true
-    elseif termbuf ~= nil and not visible then
-        vim.api.nvim_open_win(termbuf, true, termopts)
-        visible = true
-        vim.cmd("startinsert")
-    elseif termbuf ~= nil and visible then
-        vim.api.nvim_win_set_buf(0, 1)
-        -- assumes term is the current window
-        vim.api.nvim_win_hide(0)
-        visible = false
-    else
-        print("Terminal buffer is nil but still visible! Nonsense!")
-    end
-end
-
-function SendLastCmd()
-    if termbuf == nil then
-        print("Terminal has not been created yet!")
-    end
-    if not visible then
-        ToggleTerm()
-    end
-
-end
-
-vim.keymap.set({'n', 't'}, '<M-k>', function ()
-    ToggleTerm()
-end, {desc = "Toggle Terminal"})
-
-
-function ExecLastCmd()
-    if termbuf == nil then
-        print("No terminal session started!")
-        return
-    end
-    vim.api.nvim_open_win(termbuf, true, termopts)
-    visible = true
-    local ch = vim.bo.channel
-    vim.cmd("startinsert")
-    -- Escape sequence moves cursor up and does carriage return
-    vim.api.nvim_chan_send(ch, '\x1B[A\r')
-end
-
-vim.keymap.set('n', '<leader>l', function ()
-    ExecLastCmd()
-end, {desc = "Open terminal, and Execute last command"})
-
-vim.keymap.set('n', '<leader>b', function ()
-    ExecCommand("cargo build")
-end, {desc = "Cargo Test"})
-
-function ExecCommand(cmd)
-    if termbuf == nil then
-        print("No terminal session started!")
-        return
-    end
-    vim.api.nvim_open_win(termbuf, true, termopts)
-    visible = true
-    local ch = vim.bo.channel
-    vim.cmd("startinsert")
-    -- Escape sequence moves cursor up and does carriage return
-    local formatted_cmd = cmd .."\n"
-    vim.api.nvim_chan_send(ch, formatted_cmd)
-end
-
-
-
+vim.api.nvim_create_autocmd('TextYankPost', {
+    desc = 'Highlight when yanking (copying) text',
+    group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
+    callback = function()
+        vim.hl.on_yank()
+    end,
+})
 
 
 
